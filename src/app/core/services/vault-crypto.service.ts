@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import argon2 from 'argon2-browser';
+import argon2 from 'argon2-browser/dist/argon2-bundled.min.js';
 import {
   b64ToBytes,
   bytesToB64,
@@ -54,6 +54,7 @@ export class VaultCryptoService {
       time: params.t,
       mem: params.m,
       parallelism: params.p,
+      distPath: '',
     });
 
     const keyBytes = new Uint8Array(res.hash); // ArrayBuffer -> Uint8Array
