@@ -1,0 +1,169 @@
+<div class="page">
+  <h2 class="title">Vault cifrado (abrir, editar y guardar)</h2>
+
+  <section class="card">
+    <div class="row wrap">
+      <label for="file-input">Archivo:</label>
+      <input
+        #fileInput
+        id="file-input"
+        type="file"
+        (change)="onFileChange($event)"
+        class="file-input"
+      />
+
+      <div class="row wrap">
+        <button class="btn" type="button" (click)="fileInput.click()">
+          {{ file ? "Cambiar archivo…" : "Seleccionar archivo…" }}
+        </button>
+        @if (file) {
+        <span class="muted">{{ file.name }}</span>
+        }
+      </div>
+
+      <input
+        class="input"
+        type="password"
+        placeholder="Contraseña maestra (abrir)"
+        [(ngModel)]="openPassword"
+      />
+
+      <button class="btn primary" type="button" (click)="open()" [disabled]="busy">
+        {{ busy ? "Abriendo..." : "Abrir" }}
+      </button>
+
+      @if (vault) {
+      <button
+        class="btn"
+        type="button"
+        (click)="confirmDiscardIfDirty('bloquear') && lockVault('Bloqueado manualmente.')"
+      >
+        Bloquear
+      </button>
+      }
+    </div>
+
+    @if (error) {
+    <p class="msg error">{{ error }}</p>
+    } @if (savedMsg) {
+    <p class="msg ok">{{ savedMsg }}</p>
+    } @if (lockedMsg) {
+    <p class="msg info">{{ lockedMsg }}</p>
+    }
+  </section>
+
+  @if (vault) {
+  <section class="card">
+    <div class="row wrap between">
+      <div class="row wrap">
+        <h3 class="subtitle">
+          Entradas ({{ vault.entries.length }}) @if (dirty) {
+          <span class="dirty">(cambios sin guardar)</span>
+          }
+        </h3>
+
+        <input
+          class="input"
+          [(ngModel)]="query"
+          placeholder="Buscar (nombre, usuario, url, notas)"
+        />
+      </div>
+
+      <div class="row wrap">
+        <label class="check">
+          <input type="checkbox" [(ngModel)]="showPasswords" />
+          <span>Mostrar contraseñas</span>
+        </label>
+        <button class="btn" type="button" (click)="startAdd()">Nueva</button>
+      </div>
+    </div>
+
+    <div class="editor">
+      <h4 class="editor-title">{{ editIndex === null ? "Crear entrada" : "Editar entrada" }}</h4>
+
+      <div class="grid">
+        <input class="input" [(ngModel)]="draft.name" placeholder="Nombre (ej. GitHub)" />
+        <input class="input" [(ngModel)]="draft.username" placeholder="Usuario" />
+        <input class="input" [(ngModel)]="draft.password" placeholder="Contraseña" />
+        <input class="input" [(ngModel)]="draft.url" placeholder="URL (opcional)" />
+      </div>
+
+      <textarea
+        class="textarea"
+        [(ngModel)]="draft.notes"
+        placeholder="Notas (opcional)"
+        rows="3"
+      ></textarea>
+
+      <div class="row wrap">
+        <button class="btn primary" type="button" (click)="saveDraft()">
+          {{ editIndex === null ? "Añadir" : "Guardar cambios" }}
+        </button>
+        <button class="btn" type="button" (click)="resetEditor()">Cancelar</button>
+      </div>
+    </div>
+
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Nombre</th>
+            <th>Usuario</th>
+            <th>Contraseña</th>
+            <th>URL</th>
+            <th class="actions">Acciones</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          @for (e of filteredEntries; track $index) {
+          <tr>
+            <td>{{ e.name }}</td>
+            <td>{{ e.username }}</td>
+            <td>
+              @if (showPasswords) {
+              <code>{{ e.password }}</code>
+              } @else {
+              <code>••••••••</code>
+              }
+            </td>
+            <td>{{ e.url || "" }}</td>
+            <td class="actions">
+              <button class="btn sm" type="button" (click)="copy(e.username)">
+                Copiar usuario
+              </button>
+              <button class="btn sm" type="button" (click)="copy(e.password)">
+                Copiar contraseña
+              </button>
+              <button class="btn sm" type="button" (click)="startEdit($index)">Editar</button>
+              <button class="btn sm danger" type="button" (click)="deleteEntry($index)">
+                Eliminar
+              </button>
+            </td>
+          </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </section>
+  } @if (vault) {
+  <section class="card">
+    <h4 class="subtitle">Guardar</h4>
+    <div class="row wrap">
+      <input
+        class="input"
+        type="password"
+        placeholder="Contraseña maestra (guardar)"
+        [(ngModel)]="savePassword"
+      />
+      <button class="btn primary" type="button" (click)="saveAs()" [disabled]="saving">
+        {{ saving ? "Guardando..." : "Guardar como…" }}
+      </button>
+    </div>
+    <p class="hint">
+      Se vuelve a pedir la contraseña para guardar. No se conserva en memoria más allá de esta
+      operación.
+    </p>
+  </section>
+  }
+</div>
