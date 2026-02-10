@@ -30,14 +30,14 @@ export interface VaultPlain {
 
 @Injectable({ providedIn: 'root' })
 export class VaultCryptoService {
-  // Parámetros recomendables de arranque (ajústalos según rendimiento)
-  readonly defaultParams = { m: 65536, t: 3, p: 1 }; // memoria KB-ish para argon2-browser (depende implementación)
+  private static calls = 0;
 
-  private toArrayBufferView(bytes: Uint8Array): Uint8Array<ArrayBuffer> {
-    // Crea una copia respaldada por ArrayBuffer "normal" para satisfacer BufferSource
-    const out = new Uint8Array(bytes.byteLength);
-    out.set(bytes);
-    return out;
+  // Parámetros recomendables de arranque (ajústalos según rendimiento)
+  readonly defaultParams = { m: 16384, t: 2, p: 1 }; // memoria KB-ish para argon2-browser (depende implementación)
+
+  private toArrayBuffer(bytes: Uint8Array): ArrayBuffer {
+    // Crea un ArrayBuffer exacto (sin offset) siempre respaldado por ArrayBuffer
+    return bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer;
   }
 
   async deriveKey(
@@ -46,10 +46,12 @@ export class VaultCryptoService {
     params = this.defaultParams,
   ): Promise<CryptoKey> {
     // Argon2id -> 32 bytes para AES-256
+    const n = ++VaultCryptoService.calls;
+    console.log('deriveKey call #', n);
     const res = await argon2.hash({
       pass: masterPassword,
       salt,
-      type: argon2.ArgonType.Argon2id,
+      type: 2,
       hashLen: 32,
       time: params.t,
       mem: params.m,
@@ -70,30 +72,53 @@ export class VaultCryptoService {
   }
 
   async decryptEnvelope(envelope: VaultEnvelope, masterPassword: string): Promise<VaultPlain> {
+    const t = (label: string, t0: number) =>
+      console.log(label, Math.round(performance.now() - t0), 'ms');
+
     if (envelope.v !== 1) throw new Error('Versión de archivo no soportada');
     if (envelope.kdf !== 'argon2id') throw new Error('KDF no soportado');
     if (envelope.alg !== 'aes-256-gcm') throw new Error('Algoritmo no soportado');
 
+    let t0 = performance.now();
     const salt = b64ToBytes(envelope.salt);
-    const iv = b64ToBytes(envelope.iv);
-    const ct = b64ToBytes(envelope.ct);
-    const ivView = this.toArrayBufferView(iv);
-    const ctView = this.toArrayBufferView(ct);
+    t('b64 salt', t0);
 
+    t0 = performance.now();
+    const iv = this.toArrayBuffer(b64ToBytes(envelope.iv));
+    t('b64 iv', t0);
+
+    t0 = performance.now();
+    const ct = this.toArrayBuffer(b64ToBytes(envelope.ct));
+    t('b64 ct', t0);
+    console.log('ct bytes', ct.byteLength);
+
+    t0 = performance.now();
     const key = await this.deriveKey(masterPassword, salt, envelope.params);
+    t('deriveKey', t0);
 
     let ptBytes: ArrayBuffer;
     try {
-      ptBytes = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: ivView }, key, ctView);
+      console.log('ct (base64 chars):', envelope.ct.length);
+      console.log('ct (bytes):', ct.byteLength);
+      console.log('iv (bytes):', iv.byteLength);
+      t0 = performance.now();
+      ptBytes = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, key, ct);
+      t('aes decrypt', t0);
+      console.log('pt bytes', ptBytes.byteLength);
     } catch {
       // Con AES-GCM, contraseña incorrecta o archivo manipulado => falla aquí
       throw new Error('Contraseña incorrecta o archivo corrupto');
     }
 
-    const json = bytesToUtf8(new Uint8Array(ptBytes));
-    const plain = JSON.parse(json) as VaultPlain;
+    t0 = performance.now();
+    const json = new TextDecoder().decode(new Uint8Array(ptBytes));
+    t('utf8 decode', t0);
+    console.log('json chars', json.length);
 
-    return plain;
+    t0 = performance.now();
+    const plain = JSON.parse(json);
+    t('json parse', t0);
+    return plain as VaultPlain;
   }
 
   // Opcional: para guardar/exportar (puedes no usarlo)
@@ -104,11 +129,11 @@ export class VaultCryptoService {
   ): Promise<VaultEnvelope> {
     const salt = randomBytes(16);
     const iv = randomBytes(12); // recomendado para GCM
-    const ivView = this.toArrayBufferView(iv);
+    const ivView = this.toArrayBuffer(iv);
 
     const key = await this.deriveKey(masterPassword, salt, params);
     const pt = utf8ToBytes(JSON.stringify(plain));
-    const ptView = this.toArrayBufferView(pt);
+    const ptView = this.toArrayBuffer(pt);
 
     const ctBuf = await crypto.subtle.encrypt({ name: 'AES-GCM', iv: ivView }, key, ptView);
     const ct = new Uint8Array(ctBuf);

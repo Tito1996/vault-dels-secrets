@@ -1,8 +1,11 @@
 $page-max: 1100px;
 
 .page {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   max-width: $page-max;
-  margin: 24px auto;
+  margin: 40px auto;
   padding: 0 16px;
   font-family:
     system-ui,
@@ -15,7 +18,7 @@ $page-max: 1100px;
 
 .title {
   margin: 0 0 12px 0;
-  font-size: 22px;
+  font-size: 30px;
 }
 
 .subtitle {
@@ -70,12 +73,12 @@ $page-max: 1100px;
 }
 
 .textarea {
-  width: 100%;
+  width: 97.5%;
   padding: 9px 10px;
   border: 1px solid #d9d9d9;
   border-radius: 10px;
   outline: none;
-  margin-top: 10px;
+  margin: 10px 0;
 
   &:focus {
     border-color: #b9b9b9;
@@ -87,6 +90,7 @@ $page-max: 1100px;
   border: 1px solid #d0d0d0;
   background: #f6f6f6;
   border-radius: 10px;
+  margin: 0 2px;
   cursor: pointer;
 
   &:disabled {
@@ -162,7 +166,6 @@ $page-max: 1100px;
 
   .input {
     min-width: 0;
-    width: 100%;
   }
 }
 

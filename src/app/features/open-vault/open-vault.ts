@@ -1,4 +1,4 @@
-import { Component, inject, HostListener } from '@angular/core';
+import { Component, HostListener, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
 import { VaultService } from '../../core/services/vault.service';
@@ -25,59 +25,60 @@ export class OpenVault {
   private readonly vaultService = inject(VaultService);
   private readonly idle = inject(IdleLockService);
 
-  // Archivo
-  file: File | null = null;
+  // Signals de estado
+  file = signal<File | null>(null);
 
-  // Abrir
-  openPassword = '';
-  busy = false;
+  openPassword = signal('');
+  busy = signal(false);
 
-  // Estado
-  error = '';
-  savedMsg = '';
-  lockedMsg = '';
-  vault: VaultPlain | null = null;
+  error = signal('');
+  savedMsg = signal('');
+  lockedMsg = signal('');
 
-  // Lista
-  query = '';
-  showPasswords = false;
+  vault = signal<VaultPlain | null>(null);
 
-  // Edición
-  editIndex: number | null = null;
-  draft: EntryDraft = this.emptyDraft();
+  query = signal('');
+  showPasswords = signal(false);
 
-  // Guardado
-  savePassword = '';
-  saving = false;
+  editIndex = signal<number | null>(null);
+  draft = signal<EntryDraft>(this.emptyDraft());
 
-  // Dirty + idle
-  dirty = false;
+  savePassword = signal('');
+  saving = signal(false);
+
+  dirty = signal(false);
   readonly idleMs = 3 * 60_000;
 
-  constructor() {
-    // Vacio
-  }
+  // Computed
+  filteredEntries = computed(() => {
+    const v = this.vault();
+    if (!v) return [];
+    const q = this.query().trim().toLowerCase();
+    if (!q) return v.entries;
 
-  // ---------- Util ----------
+    return v.entries.filter((e) => {
+      const hay =
+        `${e.name ?? ''} ${e.username ?? ''} ${e.url ?? ''} ${e.notes ?? ''}`.toLowerCase();
+      return hay.includes(q);
+    });
+  });
+
   emptyDraft(): EntryDraft {
     return { name: '', username: '', password: '', url: '', notes: '' };
   }
 
   resetEditor() {
-    this.editIndex = null;
-    this.draft = this.emptyDraft();
+    this.editIndex.set(null);
+    this.draft.set(this.emptyDraft());
   }
 
   confirmDiscardIfDirty(actionLabel: string): boolean {
-    if (!this.vault || !this.dirty) return true;
+    if (!this.vault() || !this.dirty()) return true;
     return confirm(
-      `Tienes cambios sin guardar.\n\n` +
-        `Si continúas, se perderán.\n\n` +
-        `¿Quieres continuar para ${actionLabel}?`,
+      `Tienes cambios sin guardar.\n\nSi continúas, se perderán.\n\n¿Quieres continuar para ${actionLabel}?`,
     );
   }
 
-  // ---------- File ----------
   onFileChange(ev: Event) {
     const input = ev.target as HTMLInputElement;
     const nextFile = input.files?.[0] ?? null;
@@ -88,53 +89,51 @@ export class OpenVault {
       return;
     }
 
-    this.file = nextFile;
+    this.file.set(nextFile);
 
     this.idle.stop();
-    this.dirty = false;
-    this.lockedMsg = '';
+    this.dirty.set(false);
+    this.lockedMsg.set('');
 
-    this.error = '';
-    this.savedMsg = '';
-    this.vault = null;
+    this.error.set('');
+    this.savedMsg.set('');
+    this.vault.set(null);
     this.resetEditor();
-    this.query = '';
-    this.showPasswords = false;
+    this.query.set('');
+    this.showPasswords.set(false);
   }
 
-  // ---------- Abrir ----------
   async open() {
-    this.error = '';
-    this.savedMsg = '';
-    this.lockedMsg = '';
+    this.error.set('');
+    this.savedMsg.set('');
+    this.lockedMsg.set('');
 
-    if (!this.file) {
-      this.error = 'Selecciona un archivo.';
-      return;
-    }
-    if (!this.openPassword) {
-      this.error = 'Introduce la contraseña maestra.';
-      return;
-    }
+    const f = this.file();
+    if (!f) return this.error.set('Selecciona un archivo.');
+    if (!this.openPassword()) return this.error.set('Introduce la contraseña maestra.');
 
-    this.busy = true;
+    this.busy.set(true);
+
     try {
-      this.vault = await this.vaultService.openVaultFile(this.file, this.openPassword);
-      this.openPassword = '';
-      this.dirty = false;
+      const vault = await this.vaultService.openVaultFile(f, this.openPassword());
+
+      this.vault.set(vault);
+      this.openPassword.set('');
+      this.dirty.set(false);
+      this.busy.set(false);
 
       this.idle.start(this.idleMs, () => this.lockVault('Bloqueado por inactividad.'));
     } catch (e: any) {
-      this.error = e?.message ?? 'Error abriendo el vault';
-    } finally {
-      this.busy = false;
+      this.error.set(e?.message ?? 'Error abriendo el vault');
+      this.busy.set(false);
     }
   }
 
   lockVault(reason: string) {
-    // best-effort limpiar datos sensibles
-    if (this.vault) {
-      for (const e of this.vault.entries) {
+    const v = this.vault();
+    if (v) {
+      // best-effort limpiar strings
+      for (const e of v.entries) {
         e.password = '';
         e.username = '';
         e.name = '';
@@ -143,59 +142,61 @@ export class OpenVault {
       }
     }
 
-    this.vault = null;
+    this.vault.set(null);
     this.resetEditor();
-    this.query = '';
-    this.showPasswords = false;
+    this.query.set('');
+    this.showPasswords.set(false);
 
     this.idle.stop();
-    this.dirty = false;
+    this.dirty.set(false);
 
-    this.lockedMsg = reason;
-    this.savedMsg = '';
-    this.error = '';
+    this.lockedMsg.set(reason);
+    this.savedMsg.set('');
+    this.error.set('');
   }
 
-  // ---------- CRUD ----------
   startAdd() {
-    this.error = '';
-    this.savedMsg = '';
+    this.error.set('');
+    this.savedMsg.set('');
     this.resetEditor();
   }
 
   startEdit(i: number) {
-    if (!this.vault) return;
+    const v = this.vault();
+    if (!v) return;
 
-    this.error = '';
-    this.savedMsg = '';
-    this.editIndex = i;
+    this.error.set('');
+    this.savedMsg.set('');
+    this.editIndex.set(i);
 
-    const e = this.vault.entries[i];
-    this.draft = {
+    const e = v.entries[i];
+    this.draft.set({
       name: e.name ?? '',
       username: e.username ?? '',
       password: e.password ?? '',
       url: e.url ?? '',
       notes: e.notes ?? '',
-    };
+    });
   }
 
   saveDraft() {
-    if (!this.vault) return;
+    const v = this.vault();
+    if (!v) return;
 
-    this.error = '';
-    this.savedMsg = '';
+    this.error.set('');
+    this.savedMsg.set('');
 
+    const d = this.draft();
     const entry = {
-      name: this.draft.name.trim(),
-      username: this.draft.username,
-      password: this.draft.password,
-      url: this.draft.url.trim() || undefined,
-      notes: this.draft.notes.trim() || undefined,
+      name: d.name.trim(),
+      username: d.username,
+      password: d.password,
+      url: d.url.trim() || undefined,
+      notes: d.notes.trim() || undefined,
     };
 
     if (!entry.name || !entry.username || !entry.password) {
-      this.error = 'Nombre, usuario y contraseña son obligatorios.';
+      this.error.set('Nombre, usuario y contraseña son obligatorios.');
       return;
     }
 
@@ -203,97 +204,81 @@ export class OpenVault {
       `${(x.name ?? '').trim().toLowerCase()}::${(x.username ?? '').trim().toLowerCase()}`;
     const newKey = key(entry);
 
-    const dupIdx = this.vault.entries.findIndex(
-      (x, idx) => idx !== this.editIndex && key(x) === newKey,
-    );
+    const idxEdit = this.editIndex();
+    const dupIdx = v.entries.findIndex((x, idx) => idx !== idxEdit && key(x) === newKey);
     if (dupIdx !== -1) {
-      this.error = 'Ya existe una entrada con el mismo Nombre + Usuario.';
+      this.error.set('Ya existe una entrada con el mismo Nombre + Usuario.');
       return;
     }
 
-    if (this.editIndex === null) this.vault.entries.push(entry);
-    else this.vault.entries[this.editIndex] = entry;
+    if (idxEdit === null) v.entries.push(entry);
+    else v.entries[idxEdit] = entry;
 
-    this.dirty = true;
+    // Muy importante en signals: si mutas arrays/objetos, "toca" la señal para notificar
+    this.vault.set({ ...v, entries: [...v.entries] });
+
+    this.dirty.set(true);
     this.resetEditor();
   }
 
   deleteEntry(i: number) {
-    if (!this.vault) return;
-    this.error = '';
-    this.savedMsg = '';
+    const v = this.vault();
+    if (!v) return;
 
-    this.vault.entries.splice(i, 1);
-    if (this.editIndex === i) this.resetEditor();
+    this.error.set('');
+    this.savedMsg.set('');
 
-    this.dirty = true;
+    v.entries.splice(i, 1);
+
+    const idxEdit = this.editIndex();
+    if (idxEdit === i) this.resetEditor();
+
+    this.vault.set({ ...v, entries: [...v.entries] });
+
+    this.dirty.set(true);
   }
 
-  // ---------- Filtrado ----------
-  get filteredEntries() {
-    if (!this.vault) return [];
-    const q = this.query.trim().toLowerCase();
-    if (!q) return this.vault.entries;
-
-    return this.vault.entries.filter((e) => {
-      const hay =
-        `${e.name ?? ''} ${e.username ?? ''} ${e.url ?? ''} ${e.notes ?? ''}`.toLowerCase();
-      return hay.includes(q);
-    });
-  }
-
-  trackByIdx(i: number) {
-    return i;
-  }
-
-  // ---------- Clipboard ----------
   async copy(text: string) {
     await navigator.clipboard.writeText(text);
-    this.savedMsg = 'Copiado al portapapeles.';
-    setTimeout(() => (this.savedMsg = ''), 1500);
+    this.savedMsg.set('Copiado al portapapeles.');
+    setTimeout(() => this.savedMsg.set(''), 1500);
   }
 
-  // ---------- Guardar como... ----------
   async saveAs() {
-    this.error = '';
-    this.savedMsg = '';
+    this.error.set('');
+    this.savedMsg.set('');
 
-    if (!this.vault) {
-      this.error = 'No hay vault abierto.';
-      return;
-    }
-    if (!this.savePassword) {
-      this.error = 'Introduce la contraseña maestra para guardar.';
-      return;
-    }
+    const v = this.vault();
+    if (!v) return this.error.set('No hay vault abierto.');
+    if (!this.savePassword())
+      return this.error.set('Introduce la contraseña maestra para guardar.');
 
-    this.saving = true;
+    this.saving.set(true);
     try {
-      const envelope = await this.crypto.encryptPlain(this.vault, this.savePassword);
-      this.savePassword = '';
+      const envelope = await this.crypto.encryptPlain(v, this.savePassword());
+      this.savePassword.set('');
 
       const blob = new Blob([JSON.stringify(envelope, null, 2)], { type: 'application/json' });
+      const baseName = (this.file()?.name ?? 'vault').replace(/\.[^.]+$/, '');
 
-      const baseName = (this.file?.name ?? 'vault').replace(/\.[^.]+$/, '');
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
       a.download = `${baseName}.json`;
       a.click();
       URL.revokeObjectURL(a.href);
 
-      this.savedMsg = 'Vault exportado (Guardar como…).';
-      this.dirty = false;
+      this.savedMsg.set('Vault exportado (Guardar como…).');
+      this.dirty.set(false);
     } catch (e: any) {
-      this.error = e?.message ?? 'Error guardando el vault';
+      this.error.set(e?.message ?? 'Error guardando el vault');
     } finally {
-      this.saving = false;
+      this.saving.set(false);
     }
   }
 
-  // ---------- Protección cierre/recarga ----------
   @HostListener('window:beforeunload', ['$event'])
   beforeUnload(event: BeforeUnloadEvent) {
-    if (this.vault && this.dirty) {
+    if (this.vault() && this.dirty()) {
       event.preventDefault();
       event.returnValue = '';
     }
