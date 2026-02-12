@@ -113,6 +113,10 @@ $page-max: 1100px;
     padding: 7px 10px;
     border-radius: 9px;
   }
+
+  &.btn-open {
+    display: none;
+  }
 }
 
 .check {
@@ -166,6 +170,10 @@ $page-max: 1100px;
 
   .input {
     min-width: 0;
+  }
+
+  &.new-vault {
+    margin: 5px 0;
   }
 }
 

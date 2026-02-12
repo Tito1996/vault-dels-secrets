@@ -13,7 +13,8 @@
       />
 
       <div class="row wrap">
-        <button class="btn" type="button" (click)="fileInput.click()">
+        <button class="btn" type="button" (click)="openWithPicker()">Abrir archivo…</button>
+        <button class="btn btn-open" type="button" (click)="fileInput.click()">
           {{ file() ? "Cambiar archivo…" : "Seleccionar archivo…" }}
         </button>
         @if (file()) {
@@ -41,6 +42,8 @@
       >
         Bloquear
       </button>
+      } @else {
+      <button class="btn" type="button" (click)="startCreate()">Crear vault</button>
       }
     </div>
 
@@ -157,7 +160,7 @@
         placeholder="Contraseña maestra (guardar)"
         [(ngModel)]="savePassword"
       />
-      <button class="btn primary" type="button" (click)="saveAs()" [disabled]="saving()">
+      <button class="btn primary" type="button" (click)="save()" [disabled]="saving()">
         {{ saving() ? "Guardando..." : "Guardar como…" }}
       </button>
     </div>
@@ -166,5 +169,56 @@
       operación.
     </p>
   </section>
+  } @if (creating) {
+  <div class="editor">
+    <h4 class="editor-title">Crear vault nuevo</h4>
+
+    <div class="grid new-vault">
+      <input class="input" [(ngModel)]="newVaultName" placeholder="Nombre de archivo (sin .json)" />
+
+      <label class="check">
+        <input type="checkbox" [(ngModel)]="seedDemo" />
+        <span>Crear con entradas de ejemplo</span>
+      </label>
+
+      <input
+        class="input"
+        type="password"
+        [(ngModel)]="newVaultPassword"
+        placeholder="Contraseña maestra"
+      />
+      <input
+        class="input"
+        type="password"
+        [(ngModel)]="newVaultPassword2"
+        placeholder="Repite la contraseña"
+      />
+    </div>
+
+    <div class="row wrap">
+      <button class="btn primary" type="button" (click)="createVaultFile()" [disabled]="saving()">
+        {{ saving() ? "Creando..." : "Crear y descargar" }}
+      </button>
+      <button class="btn" type="button" (click)="cancelCreate()">Cancelar</button>
+    </div>
+
+    <div>
+      <div class="strength">
+        <div
+          class="strength__bar"
+          [class.s0]="passwordScore===0"
+          [class.s1]="passwordScore===1"
+          [class.s2]="passwordScore===2"
+          [class.s3]="passwordScore===3"
+          [class.s4]="passwordScore===4"
+        ></div>
+      </div>
+      <p class="hint">{{ passwordHint }}</p>
+    </div>
+
+    <p class="hint">
+      Se generará un archivo cifrado con un vault vacío. La contraseña no se guarda.
+    </p>
+  </div>
   }
 </div>

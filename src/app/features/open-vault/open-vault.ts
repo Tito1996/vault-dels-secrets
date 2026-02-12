@@ -1,4 +1,12 @@
-import { Component, HostListener, computed, inject, signal } from '@angular/core';
+import {
+  Component,
+  ElementRef,
+  HostListener,
+  ViewChild,
+  computed,
+  inject,
+  signal,
+} from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
 import { VaultService } from '../../core/services/vault.service';
@@ -25,8 +33,20 @@ export class OpenVault {
   private readonly vaultService = inject(VaultService);
   private readonly idle = inject(IdleLockService);
 
+  @ViewChild('fileInput') fileInput!: ElementRef<HTMLInputElement>;
+
+  // Crear nuevo vault
+  creating = false;
+  newVaultPassword = '';
+  newVaultPassword2 = '';
+  newVaultName = 'vault-nuevo';
+  seedDemo = true; // entradas de ejemplo
+  passwordScore = 0; // 0..4
+  passwordHint = '';
+
   // Signals de estado
   file = signal<File | null>(null);
+  fileHandle: FileSystemFileHandle | null = null;
 
   openPassword = signal('');
   busy = signal(false);
@@ -126,6 +146,30 @@ export class OpenVault {
     } catch (e: any) {
       this.error.set(e?.message ?? 'Error abriendo el vault');
       this.busy.set(false);
+    }
+  }
+
+  async openWithPicker() {
+    if (!this.confirmDiscardIfDirty('abrir otro archivo')) return;
+
+    try {
+      const [handle] = await (window as any).showOpenFilePicker({
+        types: [
+          {
+            description: 'Vault JSON',
+            accept: { 'application/json': ['.json'] },
+          },
+        ],
+        excludeAcceptAllOption: true,
+        multiple: false,
+      });
+
+      this.fileHandle = handle;
+      const file = await handle.getFile();
+      this.file = file;
+    } catch {
+      this.fileInput.nativeElement.click();
+      return; // cancelado
     }
   }
 
@@ -244,7 +288,7 @@ export class OpenVault {
     setTimeout(() => this.savedMsg.set(''), 1500);
   }
 
-  async saveAs() {
+  async save() {
     this.error.set('');
     this.savedMsg.set('');
 
@@ -256,18 +300,27 @@ export class OpenVault {
     this.saving.set(true);
     try {
       const envelope = await this.crypto.encryptPlain(v, this.savePassword());
+      const json = JSON.stringify(envelope, null, 2);
       this.savePassword.set('');
 
-      const blob = new Blob([JSON.stringify(envelope, null, 2)], { type: 'application/json' });
-      const baseName = (this.file()?.name ?? 'vault').replace(/\.[^.]+$/, '');
+      if (this.fileHandle) {
+        const writable = await this.fileHandle.createWritable();
+        await writable.write(json);
+        await writable.close();
 
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-      a.download = `${baseName}.json`;
-      a.click();
-      URL.revokeObjectURL(a.href);
+        this.savedMsg.set('Vault sobrescrito correctamente.');
+      } else {
+        const blob = new Blob([JSON.stringify(envelope, null, 2)], { type: 'application/json' });
+        const baseName = (this.file()?.name ?? 'vault').replace(/\.[^.]+$/, '');
 
-      this.savedMsg.set('Vault exportado (Guardar como…).');
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `${baseName}.json`;
+        a.click();
+        URL.revokeObjectURL(a.href);
+
+        this.savedMsg.set('Vault exportado (Guardar como…).');
+      }
       this.dirty.set(false);
     } catch (e: any) {
       this.error.set(e?.message ?? 'Error guardando el vault');
@@ -282,5 +335,158 @@ export class OpenVault {
       event.preventDefault();
       event.returnValue = '';
     }
+  }
+
+  // Crear nuevo vault
+  startCreate() {
+    // si hay cambios, confirmamos descarte (porque vas a “cambiar de contexto”)
+    if (!this.confirmDiscardIfDirty('crear un vault nuevo')) return;
+
+    this.creating = true;
+    this.error.set('');
+    this.savedMsg.set('');
+    this.lockedMsg.set('');
+
+    this.newVaultPassword = '';
+    this.newVaultPassword2 = '';
+    this.newVaultName = 'vault-nuevo';
+    this.seedDemo = true;
+
+    this.passwordScore = 0;
+    this.passwordHint = '';
+  }
+
+  cancelCreate() {
+    this.creating = false;
+    this.newVaultPassword = '';
+    this.newVaultPassword2 = '';
+    this.passwordScore = 0;
+    this.passwordHint = '';
+  }
+
+  private buildDemoPlain(): VaultPlain {
+    return {
+      entries: [
+        {
+          name: 'GitHub',
+          username: 'alice@example.com',
+          password: 'P@ssw0rd-GH!',
+          url: 'https://github.com',
+          notes: 'Cuenta principal',
+        },
+        {
+          name: 'Gmail',
+          username: 'alice@gmail.com',
+          password: 'S3gura#Mail2026',
+          url: 'https://mail.google.com',
+          notes: '2FA activado',
+        },
+        {
+          name: 'WiFi Casa',
+          username: '(SSID) MiCasa',
+          password: 'MiWifiSuperSecreto!',
+          notes: 'Router salón',
+        },
+      ],
+    };
+  }
+
+  async createVaultFile() {
+    this.error.set('');
+    this.savedMsg.set('');
+    this.lockedMsg.set('');
+
+    const p1 = this.newVaultPassword;
+    const p2 = this.newVaultPassword2;
+
+    if (!p1 || p1.length < 8) {
+      this.error.set('La contraseña debe tener al menos 8 caracteres.');
+      return;
+    }
+    if (p1 !== p2) {
+      this.error.set('Las contraseñas no coinciden.');
+      return;
+    }
+
+    // Recomendar más seguridad sin bloquear
+    const { score } = this.evalPassword(p1);
+    if (score <= 1) {
+      const ok = confirm('La contraseña parece débil. ¿Quieres continuar igualmente?');
+      if (!ok) return;
+    }
+
+    this.creating = false;
+    this.saving.set(true);
+
+    try {
+      const plain: VaultPlain = this.seedDemo ? this.buildDemoPlain() : { entries: [] };
+
+      const envelope = await this.crypto.encryptPlain(plain, p1);
+
+      const blob = new Blob([JSON.stringify(envelope, null, 2)], { type: 'application/json' });
+      const safeName = (this.newVaultName || 'vault-nuevo').replace(/[^\w-]+/g, '-');
+
+      // 1) Descargar
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `${safeName}.json`;
+      a.click();
+      URL.revokeObjectURL(a.href);
+
+      // 2) Auto-abrir en la app (sin volver a seleccionar archivo)
+      const file = new File([blob], `${safeName}.json`, { type: 'application/json' });
+      this.file.set(file);
+      this.vault.set(plain);
+
+      // Estado UI
+      this.creating = false;
+      this.dirty.set(false);
+      this.query.set('');
+      this.showPasswords.set(false);
+      this.resetEditor();
+
+      this.savedMsg.set('Vault nuevo creado y descargado.');
+      this.idle.start(this.idleMs, () => this.lockVault('Bloqueado por inactividad.'));
+    } catch (e: any) {
+      this.error.set(e?.message ?? 'Error creando el vault');
+    } finally {
+      this.saving.set(false);
+
+      // best-effort: limpiar passwords
+      this.newVaultPassword = '';
+      this.newVaultPassword2 = '';
+      this.passwordScore = 0;
+      this.passwordHint = '';
+    }
+  }
+
+  private evalPassword(p: string): { score: number; hint: string } {
+    // Heurística simple: longitud + diversidad
+    let score = 0;
+
+    if (p.length >= 10) score++;
+    if (p.length >= 14) score++;
+    if (/[a-z]/.test(p) && /[A-Z]/.test(p)) score++;
+    if (/\d/.test(p)) score++;
+    if (/[^A-Za-z0-9]/.test(p)) score++;
+
+    // Normaliza a 0..4 (cap)
+    score = Math.min(4, Math.max(0, score - 1)); // (para que no suba “demasiado fácil”)
+
+    const hints = [
+      'Muy débil: usa más longitud y mezcla tipos de caracteres.',
+      'Débil: añade mayúsculas, números y símbolos.',
+      'Aceptable: mejor si supera 14 caracteres.',
+      'Buena.',
+      'Muy buena.',
+    ];
+
+    return { score, hint: hints[Math.min(hints.length - 1, score)] };
+  }
+
+  onNewPasswordInput() {
+    const r = this.evalPassword(this.newVaultPassword);
+    this.passwordScore = r.score;
+    this.passwordHint = r.hint;
   }
 }
