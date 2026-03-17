@@ -13,9 +13,25 @@
       />
 
       <div class="row wrap">
-        <button class="btn" type="button" (click)="openWithPicker()">Abrir archivo…</button>
-        <button class="btn btn-open" type="button" (click)="fileInput.click()">
-          {{ file() ? "Cambiar archivo…" : "Seleccionar archivo…" }}
+        <button
+          class="btn"
+          type="button"
+          (click)="openWithPicker()"
+          aria-label="Abrir archivo"
+          title="Abrir archivo"
+        >
+          <span class="btn-label">Abrir archivo</span>
+          <span class="btn-icon" aria-hidden="true">&#128194;</span>
+        </button>
+        <button
+          class="btn btn-open"
+          type="button"
+          (click)="fileInput.click()"
+          [attr.aria-label]="file() ? 'Cambiar archivo' : 'Seleccionar archivo'"
+          [attr.title]="file() ? 'Cambiar archivo' : 'Seleccionar archivo'"
+        >
+          <span class="btn-label">{{ file() ? "Cambiar archivo" : "Seleccionar archivo" }}</span>
+          <span class="btn-icon" aria-hidden="true">{{ file() ? "🔄" : "📁" }}</span>
         </button>
         @if (file()) {
         <span class="muted">{{ file()!.name }}</span>
@@ -30,8 +46,16 @@
         (ngModelChange)="openPassword.set($event)"
       />
 
-      <button class="btn primary" type="button" (click)="open()" [disabled]="busy()">
-        {{ busy() ? "Abriendo..." : "Abrir" }}
+      <button
+        class="btn primary"
+        type="button"
+        (click)="open()"
+        [disabled]="busy()"
+        [attr.aria-label]="busy() ? 'Abriendo vault' : 'Abrir vault'"
+        [attr.title]="busy() ? 'Abriendo vault' : 'Abrir vault'"
+      >
+        <span class="btn-label">{{ busy() ? "Abriendo..." : "Abrir" }}</span>
+        <span class="btn-icon" aria-hidden="true">{{ busy() ? "⏳" : "🔓" }}</span>
       </button>
 
       @if (vault()) {
@@ -39,11 +63,23 @@
         class="btn"
         type="button"
         (click)="confirmDiscardIfDirty('bloquear') && lockVault('Bloqueado manualmente.')"
+        aria-label="Bloquear vault"
+        title="Bloquear vault"
       >
-        Bloquear
+        <span class="btn-label">Bloquear</span>
+        <span class="btn-icon" aria-hidden="true">&#128274;</span>
       </button>
       } @else {
-      <button class="btn" type="button" (click)="startCreate()">Crear vault</button>
+      <button
+        class="btn"
+        type="button"
+        (click)="startCreate()"
+        aria-label="Crear vault"
+        title="Crear vault"
+      >
+        <span class="btn-label">Crear vault</span>
+        <span class="btn-icon" aria-hidden="true">&#10133;</span>
+      </button>
       }
     </div>
 
@@ -89,7 +125,16 @@
           <input type="checkbox" [(ngModel)]="showPasswords" />
           <span>Mostrar contraseñas</span>
         </label>
-        <button class="btn" type="button" (click)="startAdd()">Nueva</button>
+        <button
+          class="btn"
+          type="button"
+          (click)="startAdd()"
+          aria-label="Nueva entrada"
+          title="Nueva entrada"
+        >
+          <span class="btn-label">Nueva</span>
+          <span class="btn-icon" aria-hidden="true">&#10133;</span>
+        </button>
       </div>
     </div>
 
@@ -112,10 +157,26 @@
       ></textarea>
 
       <div class="row wrap">
-        <button class="btn primary" type="button" (click)="saveDraft()">
-          {{ editIndex === null ? "Añadir" : "Guardar cambios" }}
+        <button
+          class="btn primary"
+          type="button"
+          (click)="saveDraft()"
+          [attr.aria-label]="editIndex === null ? 'Añadir entrada' : 'Guardar cambios'"
+          [attr.title]="editIndex === null ? 'Añadir entrada' : 'Guardar cambios'"
+        >
+          <span class="btn-label">{{ editIndex === null ? "Añadir" : "Guardar cambios" }}</span>
+          <span class="btn-icon" aria-hidden="true">{{ editIndex === null ? "➕" : "💾" }}</span>
         </button>
-        <button class="btn" type="button" (click)="resetEditor()">Cancelar</button>
+        <button
+          class="btn"
+          type="button"
+          (click)="resetEditor()"
+          aria-label="Cancelar edición"
+          title="Cancelar edición"
+        >
+          <span class="btn-label">Cancelar</span>
+          <span class="btn-icon" aria-hidden="true">&#10060;</span>
+        </button>
       </div>
     </div>
 
@@ -147,15 +208,45 @@
             <td>{{ e.category || "Sin categoría" }}</td>
             <td>{{ e.url || "" }}</td>
             <td class="actions">
-              <button class="btn sm" type="button" (click)="copy(e.username)">
-                Copiar usuario
+              <button
+                class="btn sm"
+                type="button"
+                (click)="copy(e.username)"
+                aria-label="Copiar usuario"
+                title="Copiar usuario"
+              >
+                <span class="btn-label">Copiar usuario</span>
+                <span class="btn-icon" aria-hidden="true">&#128100;</span>
               </button>
-              <button class="btn sm" type="button" (click)="copy(e.password)">
-                Copiar contraseña
+              <button
+                class="btn sm"
+                type="button"
+                (click)="copy(e.password)"
+                aria-label="Copiar contraseña"
+                title="Copiar contraseña"
+              >
+                <span class="btn-label">Copiar contraseña</span>
+                <span class="btn-icon" aria-hidden="true">&#128273;</span>
               </button>
-              <button class="btn sm" type="button" (click)="startEdit($index)">Editar</button>
-              <button class="btn sm danger" type="button" (click)="deleteEntry($index)">
-                Eliminar
+              <button
+                class="btn sm"
+                type="button"
+                (click)="startEdit($index)"
+                aria-label="Editar entrada"
+                title="Editar entrada"
+              >
+                <span class="btn-label">Editar</span>
+                <span class="btn-icon" aria-hidden="true">&#9998;</span>
+              </button>
+              <button
+                class="btn sm danger"
+                type="button"
+                (click)="deleteEntry($index)"
+                aria-label="Eliminar entrada"
+                title="Eliminar entrada"
+              >
+                <span class="btn-label">Eliminar</span>
+                <span class="btn-icon" aria-hidden="true">&#128465;</span>
               </button>
             </td>
           </tr>
@@ -174,8 +265,16 @@
         placeholder="Contraseña maestra (guardar)"
         [(ngModel)]="savePassword"
       />
-      <button class="btn primary" type="button" (click)="save()" [disabled]="saving()">
-        {{ saving() ? "Guardando..." : "Guardar como…" }}
+      <button
+        class="btn primary"
+        type="button"
+        (click)="save()"
+        [disabled]="saving()"
+        [attr.aria-label]="saving() ? 'Guardando vault' : 'Guardar vault'"
+        [attr.title]="saving() ? 'Guardando vault' : 'Guardar vault'"
+      >
+        <span class="btn-label">{{ saving() ? "Guardando..." : "Guardar como..." }}</span>
+        <span class="btn-icon" aria-hidden="true">{{ saving() ? "⏳" : "💾" }}</span>
       </button>
     </div>
     <p class="hint">
@@ -210,10 +309,27 @@
     </div>
 
     <div class="row wrap">
-      <button class="btn primary" type="button" (click)="createVaultFile()" [disabled]="saving()">
-        {{ saving() ? "Creando..." : "Crear y descargar" }}
+      <button
+        class="btn primary"
+        type="button"
+        (click)="createVaultFile()"
+        [disabled]="saving()"
+        [attr.aria-label]="saving() ? 'Creando vault' : 'Crear y descargar vault'"
+        [attr.title]="saving() ? 'Creando vault' : 'Crear y descargar vault'"
+      >
+        <span class="btn-label">{{ saving() ? "Creando..." : "Crear y descargar" }}</span>
+        <span class="btn-icon" aria-hidden="true">{{ saving() ? "⏳" : "⬇" }}</span>
       </button>
-      <button class="btn" type="button" (click)="cancelCreate()">Cancelar</button>
+      <button
+        class="btn"
+        type="button"
+        (click)="cancelCreate()"
+        aria-label="Cancelar creación"
+        title="Cancelar creación"
+      >
+        <span class="btn-label">Cancelar</span>
+        <span class="btn-icon" aria-hidden="true">&#10060;</span>
+      </button>
     </div>
 
     <div>
