@@ -166,7 +166,18 @@ export class OpenVault {
 
       this.fileHandle = handle;
       const file = await handle.getFile();
-      this.file = file;
+      this.file.set(file);
+
+      this.idle.stop();
+      this.dirty.set(false);
+      this.lockedMsg.set('');
+
+      this.error.set('');
+      this.savedMsg.set('');
+      this.vault.set(null);
+      this.resetEditor();
+      this.query.set('');
+      this.showPasswords.set(false);
     } catch {
       this.fileInput.nativeElement.click();
       return; // cancelado
