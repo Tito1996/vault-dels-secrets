@@ -23,6 +23,7 @@ export interface VaultPlain {
     name: string;
     username: string;
     password: string;
+    category?: string;
     url?: string;
     notes?: string;
   }[];

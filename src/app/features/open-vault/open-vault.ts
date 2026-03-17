@@ -17,6 +17,7 @@ interface EntryDraft {
   name: string;
   username: string;
   password: string;
+  category: string;
   url: string;
   notes: string;
 }
@@ -58,6 +59,7 @@ export class OpenVault {
   vault = signal<VaultPlain | null>(null);
 
   query = signal('');
+  categoryFilter = signal('');
   showPasswords = signal(false);
 
   editIndex = signal<number | null>(null);
@@ -74,17 +76,34 @@ export class OpenVault {
     const v = this.vault();
     if (!v) return [];
     const q = this.query().trim().toLowerCase();
-    if (!q) return v.entries;
+    const category = this.categoryFilter().trim().toLowerCase();
+
+    if (!q && !category) return v.entries;
 
     return v.entries.filter((e) => {
       const hay =
-        `${e.name ?? ''} ${e.username ?? ''} ${e.url ?? ''} ${e.notes ?? ''}`.toLowerCase();
-      return hay.includes(q);
+        `${e.name ?? ''} ${e.username ?? ''} ${e.category ?? ''} ${e.url ?? ''} ${e.notes ?? ''}`.toLowerCase();
+      const matchesQuery = !q || hay.includes(q);
+      const matchesCategory = !category || (e.category ?? '').trim().toLowerCase() === category;
+      return matchesQuery && matchesCategory;
     });
   });
 
+  categories = computed(() => {
+    const v = this.vault();
+    if (!v) return [];
+
+    const values = new Set<string>();
+    for (const e of v.entries) {
+      const c = (e.category ?? '').trim();
+      if (c) values.add(c);
+    }
+
+    return Array.from(values).sort((a, b) => a.localeCompare(b, 'es', { sensitivity: 'base' }));
+  });
+
   emptyDraft(): EntryDraft {
-    return { name: '', username: '', password: '', url: '', notes: '' };
+    return { name: '', username: '', password: '', category: '', url: '', notes: '' };
   }
 
   resetEditor() {
@@ -120,6 +139,7 @@ export class OpenVault {
     this.vault.set(null);
     this.resetEditor();
     this.query.set('');
+    this.categoryFilter.set('');
     this.showPasswords.set(false);
   }
 
@@ -177,6 +197,7 @@ export class OpenVault {
       this.vault.set(null);
       this.resetEditor();
       this.query.set('');
+      this.categoryFilter.set('');
       this.showPasswords.set(false);
     } catch {
       this.fileInput.nativeElement.click();
@@ -192,6 +213,7 @@ export class OpenVault {
         e.password = '';
         e.username = '';
         e.name = '';
+        if (e.category) e.category = '';
         if (e.url) e.url = '';
         if (e.notes) e.notes = '';
       }
@@ -200,6 +222,7 @@ export class OpenVault {
     this.vault.set(null);
     this.resetEditor();
     this.query.set('');
+    this.categoryFilter.set('');
     this.showPasswords.set(false);
 
     this.idle.stop();
@@ -229,6 +252,7 @@ export class OpenVault {
       name: e.name ?? '',
       username: e.username ?? '',
       password: e.password ?? '',
+      category: e.category ?? '',
       url: e.url ?? '',
       notes: e.notes ?? '',
     });
@@ -246,6 +270,7 @@ export class OpenVault {
       name: d.name.trim(),
       username: d.username,
       password: d.password,
+      category: d.category.trim() || undefined,
       url: d.url.trim() || undefined,
       notes: d.notes.trim() || undefined,
     };
@@ -382,6 +407,7 @@ export class OpenVault {
           name: 'GitHub',
           username: 'alice@example.com',
           password: 'P@ssw0rd-GH!',
+          category: 'Trabajo',
           url: 'https://github.com',
           notes: 'Cuenta principal',
         },
@@ -389,6 +415,7 @@ export class OpenVault {
           name: 'Gmail',
           username: 'alice@gmail.com',
           password: 'S3gura#Mail2026',
+          category: 'Personal',
           url: 'https://mail.google.com',
           notes: '2FA activado',
         },
@@ -396,6 +423,7 @@ export class OpenVault {
           name: 'WiFi Casa',
           username: '(SSID) MiCasa',
           password: 'MiWifiSuperSecreto!',
+          category: 'Hogar',
           notes: 'Router salón',
         },
       ],
@@ -453,6 +481,7 @@ export class OpenVault {
       this.creating = false;
       this.dirty.set(false);
       this.query.set('');
+      this.categoryFilter.set('');
       this.showPasswords.set(false);
       this.resetEditor();
 

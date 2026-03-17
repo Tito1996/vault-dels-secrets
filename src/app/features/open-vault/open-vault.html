@@ -69,8 +69,19 @@
         <input
           class="input"
           [(ngModel)]="query"
-          placeholder="Buscar (nombre, usuario, url, notas)"
+          placeholder="Buscar (nombre, usuario, categoría, url, notas)"
         />
+
+        <select
+          class="input"
+          [ngModel]="categoryFilter()"
+          (ngModelChange)="categoryFilter.set($event)"
+        >
+          <option value="">Todas las categorías</option>
+          @for (c of categories(); track c) {
+          <option [value]="c">{{ c }}</option>
+          }
+        </select>
       </div>
 
       <div class="row wrap">
@@ -89,6 +100,7 @@
         <input class="input" [(ngModel)]="draft().name" placeholder="Nombre (ej. GitHub)" />
         <input class="input" [(ngModel)]="draft().username" placeholder="Usuario" />
         <input class="input" [(ngModel)]="draft().password" placeholder="Contraseña" />
+        <input class="input" [(ngModel)]="draft().category" placeholder="Categoría (opcional)" />
         <input class="input" [(ngModel)]="draft().url" placeholder="URL (opcional)" />
       </div>
 
@@ -114,6 +126,7 @@
             <th>Nombre</th>
             <th>Usuario</th>
             <th>Contraseña</th>
+            <th>Categoría</th>
             <th>URL</th>
             <th class="actions">Acciones</th>
           </tr>
@@ -131,6 +144,7 @@
               <code>••••••••</code>
               }
             </td>
+            <td>{{ e.category || "Sin categoría" }}</td>
             <td>{{ e.url || "" }}</td>
             <td class="actions">
               <button class="btn sm" type="button" (click)="copy(e.username)">
