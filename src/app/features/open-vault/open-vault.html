@@ -1,0 +1,354 @@
+<div class="page">
+  <h2 class="title">Vaults dels secrets</h2>
+
+  <section class="card">
+    <div class="row wrap">
+      <label for="file-input">Archivo:</label>
+      <input
+        #fileInput
+        id="file-input"
+        type="file"
+        (change)="onFileChange($event)"
+        class="file-input"
+      />
+
+      <div class="row wrap">
+        <button
+          class="btn"
+          type="button"
+          (click)="openWithPicker()"
+          aria-label="Abrir archivo"
+          title="Abrir archivo"
+        >
+          <span class="btn-label">Abrir archivo</span>
+          <span class="btn-icon" aria-hidden="true">&#128194;</span>
+        </button>
+        <button
+          class="btn btn-open"
+          type="button"
+          (click)="fileInput.click()"
+          [attr.aria-label]="file() ? 'Cambiar archivo' : 'Seleccionar archivo'"
+          [attr.title]="file() ? 'Cambiar archivo' : 'Seleccionar archivo'"
+        >
+          <span class="btn-label">{{ file() ? "Cambiar archivo" : "Seleccionar archivo" }}</span>
+          <span class="btn-icon" aria-hidden="true">{{ file() ? "🔄" : "📁" }}</span>
+        </button>
+        @if (file()) {
+        <span class="muted">{{ file()!.name }}</span>
+        }
+      </div>
+
+      <input
+        class="input"
+        type="password"
+        placeholder="Contraseña maestra (abrir)"
+        [ngModel]="openPassword()"
+        (ngModelChange)="openPassword.set($event)"
+      />
+
+      <button
+        class="btn primary"
+        type="button"
+        (click)="open()"
+        [disabled]="busy()"
+        [attr.aria-label]="busy() ? 'Abriendo vault' : 'Abrir vault'"
+        [attr.title]="busy() ? 'Abriendo vault' : 'Abrir vault'"
+      >
+        <span class="btn-label">{{ busy() ? "Abriendo..." : "Abrir" }}</span>
+        <span class="btn-icon" aria-hidden="true">{{ busy() ? "⏳" : "🔓" }}</span>
+      </button>
+
+      @if (vault()) {
+      <button
+        class="btn"
+        type="button"
+        (click)="confirmDiscardIfDirty('bloquear') && lockVault('Bloqueado manualmente.')"
+        aria-label="Bloquear vault"
+        title="Bloquear vault"
+      >
+        <span class="btn-label">Bloquear</span>
+        <span class="btn-icon" aria-hidden="true">&#128274;</span>
+      </button>
+      } @else {
+      <button
+        class="btn"
+        type="button"
+        (click)="startCreate()"
+        aria-label="Crear vault"
+        title="Crear vault"
+      >
+        <span class="btn-label">Crear vault</span>
+        <span class="btn-icon" aria-hidden="true">&#10133;</span>
+      </button>
+      }
+    </div>
+
+    @if (error()) {
+    <p class="msg error">{{ error() }}</p>
+    } @if (savedMsg()) {
+    <p class="msg ok">{{ savedMsg() }}</p>
+    } @if (lockedMsg()) {
+    <p class="msg info">{{ lockedMsg() }}</p>
+    }
+  </section>
+
+  @if (vault()) {
+  <section class="card">
+    <div class="row wrap between">
+      <div class="row wrap">
+        <h3 class="subtitle">
+          Entradas ({{ vault()!.entries.length }}) @if (dirty()) {
+          <span class="dirty">(cambios sin guardar)</span>
+          }
+        </h3>
+
+        <input
+          class="input"
+          [(ngModel)]="query"
+          placeholder="Buscar (nombre, usuario, categoría, url, notas)"
+        />
+
+        <select
+          class="input"
+          [ngModel]="categoryFilter()"
+          (ngModelChange)="categoryFilter.set($event)"
+        >
+          <option value="">Todas las categorías</option>
+          @for (c of categories(); track c) {
+          <option [value]="c">{{ c }}</option>
+          }
+        </select>
+      </div>
+
+      <div class="row wrap">
+        <label class="check">
+          <input type="checkbox" [(ngModel)]="showPasswords" />
+          <span>Mostrar contraseñas</span>
+        </label>
+        <button
+          class="btn"
+          type="button"
+          (click)="startAdd()"
+          aria-label="Nueva entrada"
+          title="Nueva entrada"
+        >
+          <span class="btn-label">Nueva</span>
+          <span class="btn-icon" aria-hidden="true">&#10133;</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="editor">
+      <h4 class="editor-title">{{ editIndex === null ? "Crear entrada" : "Editar entrada" }}</h4>
+
+      <div class="grid">
+        <input class="input" [(ngModel)]="draft().name" placeholder="Nombre (ej. GitHub)" />
+        <input class="input" [(ngModel)]="draft().username" placeholder="Usuario" />
+        <input class="input" [(ngModel)]="draft().password" placeholder="Contraseña" />
+        <input class="input" [(ngModel)]="draft().category" placeholder="Categoría (opcional)" />
+        <input class="input" [(ngModel)]="draft().url" placeholder="URL (opcional)" />
+      </div>
+
+      <textarea
+        class="textarea"
+        [(ngModel)]="draft().notes"
+        placeholder="Notas (opcional)"
+        rows="3"
+      ></textarea>
+
+      <div class="row wrap">
+        <button
+          class="btn primary"
+          type="button"
+          (click)="saveDraft()"
+          [attr.aria-label]="editIndex === null ? 'Añadir entrada' : 'Guardar cambios'"
+          [attr.title]="editIndex === null ? 'Añadir entrada' : 'Guardar cambios'"
+        >
+          <span class="btn-label">{{ editIndex === null ? "Añadir" : "Guardar cambios" }}</span>
+          <span class="btn-icon" aria-hidden="true">{{ editIndex === null ? "➕" : "💾" }}</span>
+        </button>
+        <button
+          class="btn"
+          type="button"
+          (click)="resetEditor()"
+          aria-label="Cancelar edición"
+          title="Cancelar edición"
+        >
+          <span class="btn-label">Cancelar</span>
+          <span class="btn-icon" aria-hidden="true">&#10060;</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Nombre</th>
+            <th>Usuario</th>
+            <th>Contraseña</th>
+            <th>Categoría</th>
+            <th>URL</th>
+            <th class="actions">Acciones</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          @for (e of filteredEntries(); track $index) {
+          <tr>
+            <td>{{ e.name }}</td>
+            <td>{{ e.username }}</td>
+            <td>
+              @if (showPasswords()) {
+              <code>{{ e.password }}</code>
+              } @else {
+              <code>••••••••</code>
+              }
+            </td>
+            <td>{{ e.category || "Sin categoría" }}</td>
+            <td>{{ e.url || "" }}</td>
+            <td class="actions">
+              <button
+                class="btn sm"
+                type="button"
+                (click)="copy(e.username)"
+                aria-label="Copiar usuario"
+                title="Copiar usuario"
+              >
+                <span class="btn-label">Copiar usuario</span>
+                <span class="btn-icon" aria-hidden="true">&#128100;</span>
+              </button>
+              <button
+                class="btn sm"
+                type="button"
+                (click)="copy(e.password)"
+                aria-label="Copiar contraseña"
+                title="Copiar contraseña"
+              >
+                <span class="btn-label">Copiar contraseña</span>
+                <span class="btn-icon" aria-hidden="true">&#128273;</span>
+              </button>
+              <button
+                class="btn sm"
+                type="button"
+                (click)="startEdit($index)"
+                aria-label="Editar entrada"
+                title="Editar entrada"
+              >
+                <span class="btn-label">Editar</span>
+                <span class="btn-icon" aria-hidden="true">&#9998;</span>
+              </button>
+              <button
+                class="btn sm danger"
+                type="button"
+                (click)="deleteEntry($index)"
+                aria-label="Eliminar entrada"
+                title="Eliminar entrada"
+              >
+                <span class="btn-label">Eliminar</span>
+                <span class="btn-icon" aria-hidden="true">&#128465;</span>
+              </button>
+            </td>
+          </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </section>
+  } @if (vault()) {
+  <section class="card">
+    <h4 class="subtitle">Guardar</h4>
+    <div class="row wrap">
+      <input
+        class="input"
+        type="password"
+        placeholder="Contraseña maestra (guardar)"
+        [(ngModel)]="savePassword"
+      />
+      <button
+        class="btn primary"
+        type="button"
+        (click)="save()"
+        [disabled]="saving()"
+        [attr.aria-label]="saving() ? 'Guardando vault' : 'Guardar vault'"
+        [attr.title]="saving() ? 'Guardando vault' : 'Guardar vault'"
+      >
+        <span class="btn-label">{{ saving() ? "Guardando..." : "Guardar como..." }}</span>
+        <span class="btn-icon" aria-hidden="true">{{ saving() ? "⏳" : "💾" }}</span>
+      </button>
+    </div>
+    <p class="hint">
+      Se vuelve a pedir la contraseña para guardar. No se conserva en memoria más allá de esta
+      operación.
+    </p>
+  </section>
+  } @if (creating) {
+  <div class="editor">
+    <h4 class="editor-title">Crear vault nuevo</h4>
+
+    <div class="grid new-vault">
+      <input class="input" [(ngModel)]="newVaultName" placeholder="Nombre de archivo (sin .json)" />
+
+      <label class="check">
+        <input type="checkbox" [(ngModel)]="seedDemo" />
+        <span>Crear con entradas de ejemplo</span>
+      </label>
+
+      <input
+        class="input"
+        type="password"
+        [(ngModel)]="newVaultPassword"
+        placeholder="Contraseña maestra"
+      />
+      <input
+        class="input"
+        type="password"
+        [(ngModel)]="newVaultPassword2"
+        placeholder="Repite la contraseña"
+      />
+    </div>
+
+    <div class="row wrap">
+      <button
+        class="btn primary"
+        type="button"
+        (click)="createVaultFile()"
+        [disabled]="saving()"
+        [attr.aria-label]="saving() ? 'Creando vault' : 'Crear y descargar vault'"
+        [attr.title]="saving() ? 'Creando vault' : 'Crear y descargar vault'"
+      >
+        <span class="btn-label">{{ saving() ? "Creando..." : "Crear y descargar" }}</span>
+        <span class="btn-icon" aria-hidden="true">{{ saving() ? "⏳" : "⬇" }}</span>
+      </button>
+      <button
+        class="btn"
+        type="button"
+        (click)="cancelCreate()"
+        aria-label="Cancelar creación"
+        title="Cancelar creación"
+      >
+        <span class="btn-label">Cancelar</span>
+        <span class="btn-icon" aria-hidden="true">&#10060;</span>
+      </button>
+    </div>
+
+    <div>
+      <div class="strength">
+        <div
+          class="strength__bar"
+          [class.s0]="passwordScore===0"
+          [class.s1]="passwordScore===1"
+          [class.s2]="passwordScore===2"
+          [class.s3]="passwordScore===3"
+          [class.s4]="passwordScore===4"
+        ></div>
+      </div>
+      <p class="hint">{{ passwordHint }}</p>
+    </div>
+
+    <p class="hint">
+      Se generará un archivo cifrado con un vault vacío. La contraseña no se guarda.
+    </p>
+  </div>
+  }
+</div>

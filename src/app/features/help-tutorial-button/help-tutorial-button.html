@@ -1,0 +1,50 @@
+<button
+  type="button"
+  class="help-fab"
+  (click)="openTutorial()"
+  aria-label="Abrir tutorial de la aplicación"
+  title="Ayuda"
+>
+  ?
+</button>
+
+@if (isOpen()) {
+<div class="tutorial-overlay" (click)="closeTutorial()" aria-hidden="true"></div>
+
+<section
+  class="tutorial-modal"
+  role="dialog"
+  aria-modal="true"
+  aria-labelledby="tutorial-title"
+  aria-describedby="tutorial-description"
+>
+  <header class="tutorial-header">
+    <h2 id="tutorial-title">Tutorial rápido</h2>
+    <button
+      type="button"
+      class="close-btn"
+      (click)="closeTutorial()"
+      aria-label="Cerrar tutorial"
+      title="Cerrar"
+    >
+      x
+    </button>
+  </header>
+
+  <p id="tutorial-description" class="tutorial-intro">
+    Sigue estos pasos para usar la aplicación de forma segura.
+  </p>
+
+  <ol class="tutorial-steps">
+    <li>Selecciona o crea un vault desde los botones de la parte superior.</li>
+    <li>Introduce tu contraseña maestra para abrirlo.</li>
+    <li>Añade, edita o elimina entradas según necesites.</li>
+    <li>Guarda los cambios con "Guardar como..." y vuelve a introducir la contraseña.</li>
+    <li>Bloquea el vault cuando termines o deja que se bloquee por inactividad.</li>
+  </ol>
+
+  <p class="tutorial-note">
+    Consejo: usa categorías y búsqueda para encontrar credenciales más rápido.
+  </p>
+</section>
+}
