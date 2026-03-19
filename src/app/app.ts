@@ -1,10 +1,10 @@
 import { Component } from '@angular/core';
-import { RouterOutlet } from '@angular/router';
 import { OpenVault } from './features/open-vault/open-vault';
+import { HelpTutorialButton } from './features/help-tutorial-button/help-tutorial-button';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, OpenVault],
+  imports: [OpenVault, HelpTutorialButton],
   templateUrl: './app.html',
   styleUrl: './app.scss',
 })
