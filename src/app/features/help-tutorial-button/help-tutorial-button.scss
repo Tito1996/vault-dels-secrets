@@ -1,0 +1,96 @@
+.help-fab {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  width: 52px;
+  height: 52px;
+  border: none;
+  border-radius: 50%;
+  background: #111;
+  color: #fff;
+  font-size: 24px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.25);
+  z-index: 1000;
+}
+
+.help-fab:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 14px 28px rgba(0, 0, 0, 0.3);
+}
+
+.help-fab:focus-visible {
+  outline: 3px solid #6ea8fe;
+  outline-offset: 3px;
+}
+
+.tutorial-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.48);
+  z-index: 1100;
+}
+
+.tutorial-modal {
+  position: fixed;
+  right: 20px;
+  bottom: 84px;
+  width: min(420px, calc(100vw - 24px));
+  max-height: calc(100vh - 110px);
+  overflow: auto;
+  padding: 16px;
+  border: 1px solid #e3e3e3;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25);
+  z-index: 1200;
+}
+
+.tutorial-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.tutorial-header h2 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.close-btn {
+  width: 30px;
+  height: 30px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  background: #f4f4f4;
+  cursor: pointer;
+}
+
+.tutorial-intro,
+.tutorial-note {
+  margin: 12px 0 0;
+  font-size: 14px;
+  color: #333;
+}
+
+.tutorial-steps {
+  margin: 12px 0 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 8px;
+}
+
+@media (max-width: 768px) {
+  .help-fab {
+    right: 12px;
+    bottom: 12px;
+  }
+
+  .tutorial-modal {
+    right: 12px;
+    bottom: 74px;
+    width: calc(100vw - 24px);
+  }
+}
