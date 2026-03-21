@@ -61,6 +61,7 @@ export class OpenVault {
   query = signal('');
   categoryFilter = signal('');
   showPasswords = signal(false);
+  editorVisible = signal(false);
 
   editIndex = signal<number | null>(null);
   draft = signal<EntryDraft>(this.emptyDraft());
@@ -107,6 +108,7 @@ export class OpenVault {
   }
 
   resetEditor() {
+    this.editorVisible.set(false);
     this.editIndex.set(null);
     this.draft.set(this.emptyDraft());
   }
@@ -237,6 +239,7 @@ export class OpenVault {
     this.error.set('');
     this.savedMsg.set('');
     this.resetEditor();
+    this.editorVisible.set(true);
   }
 
   startEdit(i: number) {
@@ -246,6 +249,7 @@ export class OpenVault {
     this.error.set('');
     this.savedMsg.set('');
     this.editIndex.set(i);
+    this.editorVisible.set(true);
 
     const e = v.entries[i];
     this.draft.set({

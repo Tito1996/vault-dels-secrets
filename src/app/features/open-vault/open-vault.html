@@ -138,6 +138,7 @@
       </div>
     </div>
 
+    @if (editorVisible()) {
     <div class="editor">
       <h4 class="editor-title">{{ editIndex === null ? "Crear entrada" : "Editar entrada" }}</h4>
 
@@ -179,6 +180,7 @@
         </button>
       </div>
     </div>
+    }
 
     <div class="table-wrap">
       <table class="table">
