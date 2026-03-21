@@ -97,7 +97,7 @@ npm run format
 
 ## Versiones y cambios
 
-### v1.0.1 — actual
+### v1.0.2 — actual
 
 - Formulario de crear/editar entrda oculto por defecto; se despliega y centra en pantalla al pulsar **Nueva** o **Editar**.
 - Sección de apertura de archivo adaptativa: muestra solo el botón **Bloquear** cuando el vault está abierto, y los controles de carga cuando está cerrado.
