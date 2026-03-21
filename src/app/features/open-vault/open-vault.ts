@@ -35,6 +35,7 @@ export class OpenVault {
   private readonly idle = inject(IdleLockService);
 
   @ViewChild('fileInput') fileInput!: ElementRef<HTMLInputElement>;
+  @ViewChild('entryEditor') entryEditor?: ElementRef<HTMLElement>;
 
   // Crear nuevo vault
   creating = false;
@@ -240,6 +241,7 @@ export class OpenVault {
     this.savedMsg.set('');
     this.resetEditor();
     this.editorVisible.set(true);
+    this.scrollToEntryEditor();
   }
 
   startEdit(i: number) {
@@ -260,6 +262,14 @@ export class OpenVault {
       url: e.url ?? '',
       notes: e.notes ?? '',
     });
+
+    this.scrollToEntryEditor();
+  }
+
+  private scrollToEntryEditor() {
+    setTimeout(() => {
+      this.entryEditor?.nativeElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 0);
   }
 
   saveDraft() {
