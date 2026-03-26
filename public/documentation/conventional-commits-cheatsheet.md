@@ -5,9 +5,7 @@ See how [a minor change](#examples) to your commit message style can make a diff
 git commit -m "**[type](#types)**(**[optional scope](#scopes)**): **[description](#description)**"
 
 > [!Note]
-> This cheatsheet is opinionated, however it does not violate the specification of [conventional commits](https://www.conventionalcommits.org/)
-> [!TIP]
-> Take a look at **[git-conventional-commits](https://github.com/qoomon/git-conventional-commits)** ; a CLI util to ensure these conventions, determine version and generate changelogs.
+> This cheatsheet is based on the specification of [conventional commits](https://www.conventionalcommits.org/)
 
 ## Commit Message Formats
 
