@@ -1,10 +1,8 @@
-# Conventional Commit Messages [![starline](https://starlines.qoo.monster/assets/qoomon/5dfcdf8eec66a051ecd85625518cfd13@gist)](https://github.com/qoomon/starline)
+# Conventional Commit Messages
 
 See how [a minor change](#examples) to your commit message style can make a difference.
 
-<pre>
-git commit -m"<b><a href="#types">&lt;type&gt;</a></b></font>(<b><a href="#scopes">&lt;optional scope&gt;</a></b>): <b><a href="#description">&lt;description&gt;</a></b>" \
-</pre>
+git commit -m "**[type](#types)**(**[optional scope](#scopes)**): **[description](#description)**"
 
 > [!Note]
 > This cheatsheet is opinionated, however it does not violate the specification of [conventional commits](https://www.conventionalcommits.org/)
@@ -15,29 +13,25 @@ git commit -m"<b><a href="#types">&lt;type&gt;</a></b></font>(<b><a href="#scope
 
 ### General Commit
 
-<pre>
-<b><a href="#types">&lt;type&gt;</a></b></font>(<b><a href="#scopes">&lt;optional scope&gt;</a></b>): <b><a href="#description">&lt;description&gt;</a></b>
-</pre>
+**[type](#types)**(**[optional scope](#scopes)**): **[description](#description)**
 
 ### Initial Commit
 
-```
+```bash
 chore: init
 ```
 
 ### Merge Commit
 
-<pre>
-Merge branch '<b>&lt;branch name&gt;</b>'
-</pre>
-<sup>Follows default git merge message</sup>
+Merge branch '**branch name**'
+
+`Follows default git merge message`
 
 ### Revert Commit
 
-<pre>
-Revert "<b>&lt;reverted commit subject line&gt;</b>"
-</pre>
-<sup>Follows default git revert message</sup>
+Revert "**reverted commit subject line**"
+
+`Follows default git revert message`
 
 ### Types
 
@@ -56,6 +50,7 @@ Revert "<b>&lt;reverted commit subject line&gt;</b>"
 ### Scopes
 
 The `scope` provides additional contextual information.
+
 - The scope is an **optional** part
 - Allowed scopes vary and are typically defined by the specific project
 - **Do not** use issue identifiers as scopes
@@ -69,7 +64,6 @@ The `description` contains a concise description of the change.
   - Think of `This commit will...` or `This commit should...`
 - **Do not** capitalize the first letter
 - **Do not** end the description with a period (`.`)
-- In case of breaking changes also see [breaking changes indicator](#breaking-changes-indicator)
 
 ### Versioning
 
@@ -80,39 +74,39 @@ The `description` contains a concise description of the change.
 
 ### Examples
 
-- ```
+- ```bash
   feat: add email notifications on new direct messages
   ```
 
-- ```
+- ```bash
   feat(shopping cart): add the amazing button
   ```
 
-- ```
+- ```bash
   fix(shopping-cart): prevent order an empty shopping cart
   ```
 
-- ```
+- ```bash
   fix(api): fix wrong calculation of request body checksum
   ```
 
-- ```
-  perf: decrease memory footprint for determine unique visitors by using HyperLogLog
+- ```bash
+  perf: decrease memory footprint to determine unique visitors by using HyperLogLog
   ```
 
-- ```
+- ```bash
   build: update dependencies
   ```
 
-- ```
+- ```bash
   build(release): bump version to 1.0.0
   ```
 
-- ```
+- ```bash
   refactor: implement fibonacci number calculation as recursion
   ```
 
-- ```
+- ```bash
   style: remove empty line
   ```
 
