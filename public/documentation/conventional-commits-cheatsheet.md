@@ -89,25 +89,11 @@ The `description` contains a concise description of the change.
   ```
 
 - ```
-  feat!: remove ticket list endpoint
-
-  refers to JIRA-1337
-
-  BREAKING CHANGE: ticket endpoints no longer supports list all entities.
-  ```
-
-- ```
   fix(shopping-cart): prevent order an empty shopping cart
   ```
 
 - ```
   fix(api): fix wrong calculation of request body checksum
-  ```
-
-- ```
-  fix: add missing parameter to service call
-
-  The error occurred due to <reasons>.
   ```
 
 - ```
